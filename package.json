@@ -1,34 +1,53 @@
 {
   "name": "echomirror",
   "version": "1.0.0",
-  "description": "Real-time eye contact video communication app",
+  "description": "リアルタイムカメラ映像共有アプリ",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "node server/index.js",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
     "server": "node server/index.js",
     "client": "electron .",
-    "test-dual": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:3000 && electron .\"",
-    "build": "electron-builder"
+    "dev-server": "nodemon server/index.js",
+    "dev-client": "electron ."
   },
-  "keywords": [
-    "electron",
-    "webrtc",
-    "socket.io",
-    "mediapipe"
-  ],
-  "author": "",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": ["electron", "webrtc", "socket.io", "camera", "face-detection"],
+  "author": "Your Name",
   "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.6.4",
-    "wait-on": "^7.2.0"
-  },
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.18.2",
     "socket.io": "^4.7.4",
     "socket.io-client": "^4.7.4"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.4",
+    "nodemon": "^3.0.2"
+  },
+  "build": {
+    "appId": "com.echomirror.app",
+    "productName": "EchoMirror",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "!dist/**/*",
+      "!*.md"
+    ],
+    "mac": {
+      "category": "public.app-category.video"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

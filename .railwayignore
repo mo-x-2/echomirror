@@ -1,0 +1,16 @@
+# Electron関連ファイルを除外
+main.js
+renderer/
+node_modules/electron/
+node_modules/electron-builder/
+
+# 開発用ファイル
+*.md
+.git/
+.gitignore
+dist/
+build/
+
+# ローカル設定
+.env
+.env.local 

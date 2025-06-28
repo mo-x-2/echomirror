@@ -37,9 +37,22 @@ module.exports = {
         autoDiscovery: false // クラウドでは自動発見を無効
     },
     
-    // 現在の環境設定
-    // 'local', 'localNetwork', 'cloud' のいずれかを選択
-    currentEnvironment: 'localNetwork',
+    // 開発環境設定
+    development: {
+        serverUrl: 'http://192.168.10.12:3000', // ローカルネットワーク用
+        autoDiscover: true,
+        discoveryTimeout: 5000
+    },
+    
+    // 本番環境設定
+    production: {
+        serverUrl: 'https://your-railway-app.up.railway.app', // Railwayデプロイ後のURL
+        autoDiscover: false, // 本番環境では自動発見を無効
+        discoveryTimeout: 3000
+    },
+    
+    // 現在の環境
+    current: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     
     // デバッグ設定
     debug: {
@@ -53,5 +66,18 @@ module.exports = {
         maxRetries: 3,
         connectionTimeout: 10000,
         iceTimeout: 5000
+    },
+    
+    // 設定取得メソッド
+    getServerUrl: function() {
+        return this[this.current].serverUrl;
+    },
+    
+    getAutoDiscover: function() {
+        return this[this.current].autoDiscover;
+    },
+    
+    getDiscoveryTimeout: function() {
+        return this[this.current].discoveryTimeout;
     }
 }; 
