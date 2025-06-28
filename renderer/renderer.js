@@ -218,14 +218,6 @@ async function connectToServer() {
         clientCount.textContent = `接続数: ${count}`;
         console.log(`接続中のクライアント数: ${count}`);
 
-        // initiator判定
-        if (count === 1) {
-            isInitiator = true;
-            console.log('このクライアントがInitiatorです');
-        } else {
-            isInitiator = false;
-        }
-
         // 2人以上接続したらWebRTC接続を開始
         if (count >= 2) {
             console.log('2人以上接続しました。WebRTC接続を開始します...');
@@ -264,6 +256,11 @@ async function connectToServer() {
     socket.on('connect_timeout', () => {
         console.error('接続タイムアウト');
         updateStatus('接続タイムアウトが発生しました');
+    });
+
+    socket.on('initiatorId', (id) => {
+        isInitiator = (socket.id === id);
+        console.log('[DEBUG] initiatorId受信:', id, '自分のID:', socket.id, 'isInitiator:', isInitiator);
     });
 }
 

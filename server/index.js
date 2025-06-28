@@ -58,6 +58,12 @@ io.on('connection', (socket) => {
     // 接続中のクライアント数をブロードキャスト
     io.emit('clientCount', connectedClients.size);
 
+    // initiatorIdをブロードキャスト
+    if (connectedClients.size === 2) {
+        const initiatorId = Array.from(connectedClients.keys())[0];
+        io.emit('initiatorId', initiatorId);
+    }
+
     // 人検出状態の更新
     socket.on('personDetected', (isDetected) => {
         const client = connectedClients.get(socket.id);
