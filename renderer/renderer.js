@@ -64,64 +64,39 @@ async function discoverServers() {
     
     discoveredServers = [];
     
-    // ローカルネットワーク内のサーバーを探索
-    const localIPs = getLocalNetworkIPs();
+    // 設定ファイルからサーバーIPを取得
+    const config = require('../../config.js');
+    const serverIP = config.localNetwork.serverUrl.replace('http://', '').replace(':3000', '');
+    console.log(`設定されたサーバーIP: ${serverIP}`);
     
-    for (const ip of localIPs) {
-        const serverUrl = `http://${ip}:3000`;
-        try {
-            const response = await fetch(`${serverUrl}/health`, {
-                method: 'GET',
-                timeout: 2000
+    // 設定されたサーバーIPのみをチェック
+    const serverUrl = `http://${serverIP}:3000`;
+    try {
+        console.log(`サーバーをチェック中: ${serverUrl}`);
+        const response = await fetch(`${serverUrl}/health`, {
+            method: 'GET',
+            timeout: 5000
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            discoveredServers.push({
+                url: serverUrl,
+                ip: serverIP,
+                connections: data.connections || 0
             });
-            
-            if (response.ok) {
-                const data = await response.json();
-                discoveredServers.push({
-                    url: serverUrl,
-                    ip: ip,
-                    connections: data.connections || 0
-                });
-                console.log(`サーバーを発見: ${serverUrl}`);
-            }
-        } catch (error) {
-            // サーバーが見つからない場合は無視
+            console.log(`✅ サーバーを発見: ${serverUrl}`);
+            SERVER_URL = serverUrl;
+            updateStatus(`サーバーを発見: ${serverIP}`);
+            return true;
         }
+    } catch (error) {
+        console.log(`❌ サーバーが見つかりません: ${serverUrl} (${error.message})`);
     }
     
-    if (discoveredServers.length > 0) {
-        // 最初に見つかったサーバーを使用
-        SERVER_URL = discoveredServers[0].url;
-        console.log(`接続先サーバー: ${SERVER_URL}`);
-        updateStatus(`サーバーを発見: ${discoveredServers[0].ip}`);
-        return true;
-    } else {
-        console.log('ローカルネットワークでサーバーが見つかりませんでした');
-        updateStatus('ローカルネットワークでサーバーが見つかりませんでした');
-        return false;
-    }
-}
-
-// ローカルネットワークのIPアドレスを取得
-function getLocalNetworkIPs() {
-    const { networkInterfaces } = require('os');
-    const nets = networkInterfaces();
-    const ips = [];
-    
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name]) {
-            if (net.family === 'IPv4' && !net.internal) {
-                // 192.168.x.x や 10.x.x.x などのローカルネットワークIP
-                if (net.address.startsWith('192.168.') || 
-                    net.address.startsWith('10.') ||
-                    net.address.startsWith('172.')) {
-                    ips.push(net.address);
-                }
-            }
-        }
-    }
-    
-    return ips;
+    console.log('❌ サーバーが見つかりませんでした');
+    updateStatus('サーバーが見つかりませんでした。サーバーが起動しているか確認してください。');
+    return false;
 }
 
 // 初期化

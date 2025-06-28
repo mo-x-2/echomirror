@@ -14,7 +14,7 @@ module.exports = {
     
     // ローカルネットワーク環境（同一ネットワーク内の異なるPC）
     localNetwork: {
-        serverUrl: 'http://192.168.1.100:3000', // 手動設定（自動発見が失敗した場合のフォールバック）
+        serverUrl: 'http://192.168.10.12:3000', // 手動設定（自動発見が失敗した場合のフォールバック）
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
