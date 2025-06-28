@@ -34,8 +34,8 @@ let isDetectionActive = false;
 let discoveredServers = [];
 
 // 設定
-// 環境に応じてサーバーURLを変更
-let SERVER_URL = getServerURL();
+// サーバーURLを直接指定
+let SERVER_URL = 'https://echomirror-production.up.railway.app';
 const rtcConfiguration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -46,107 +46,11 @@ const rtcConfiguration = {
     ]
 };
 
-// サーバーURLを取得する関数
-async function getServerURL() {
-    // 環境変数から取得（本番環境用）
-    if (process.env.SERVER_URL) {
-        return process.env.SERVER_URL;
-    }
-    
-    // 設定から取得
-    try {
-        let config;
-        if (window.appConfig) {
-            config = window.appConfig;
-        } else {
-            const { ipcRenderer } = require('electron');
-            config = await ipcRenderer.invoke('get-config');
-        }
-        return config.localNetwork.serverUrl;
-    } catch (error) {
-        console.error('設定の取得に失敗しました:', error);
-        // フォールバック
-        return 'http://localhost:3000';
-    }
-}
-
-// サーバー発見機能
-async function discoverServers() {
-    console.log('サーバーを探索中...');
-    updateStatus('サーバーを探索中...');
-    
-    discoveredServers = [];
-    
-    // 設定を取得
-    let config;
-    try {
-        // まずwindow.appConfigを試す
-        if (window.appConfig) {
-            config = window.appConfig;
-        } else {
-            // IPCを使用して設定を取得
-            const { ipcRenderer } = require('electron');
-            config = await ipcRenderer.invoke('get-config');
-        }
-    } catch (error) {
-        console.error('設定の取得に失敗しました:', error);
-        // フォールバック設定
-        config = {
-            localNetwork: {
-                serverUrl: 'http://192.168.10.12:3000'
-            }
-        };
-    }
-    
-    const serverIP = config.localNetwork.serverUrl.replace('http://', '').replace(':3000', '');
-    console.log(`設定されたサーバーIP: ${serverIP}`);
-    
-    // 設定されたサーバーIPのみをチェック
-    const serverUrl = `http://${serverIP}:3000`;
-    try {
-        console.log(`サーバーをチェック中: ${serverUrl}`);
-        const response = await fetch(`${serverUrl}/health`, {
-            method: 'GET',
-            timeout: 5000
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            discoveredServers.push({
-                url: serverUrl,
-                ip: serverIP,
-                connections: data.connections || 0
-            });
-            console.log(`✅ サーバーを発見: ${serverUrl}`);
-            SERVER_URL = serverUrl;
-            updateStatus(`サーバーを発見: ${serverIP}`);
-            return true;
-        }
-    } catch (error) {
-        console.log(`❌ サーバーが見つかりません: ${serverUrl} (${error.message})`);
-    }
-    
-    console.log('❌ サーバーが見つかりませんでした');
-    updateStatus('サーバーが見つかりませんでした。サーバーが起動しているか確認してください。');
-    return false;
-}
-
 // 初期化
 async function initialize() {
     setupEventListeners();
     await initializeLocalVideo();
-    
-    // サーバーURLを取得
-    SERVER_URL = await getServerURL();
-    console.log('初期サーバーURL:', SERVER_URL);
-    
     updateDebugInfo();
-    
-    // サーバー発見を試行
-    await discoverServers();
-    
-    // サーバーURLを表示
-    console.log('接続先サーバー:', SERVER_URL);
     updateStatus(`接続先: ${SERVER_URL}`);
 }
 
@@ -290,18 +194,7 @@ function hideRemoteVideo() {
 // サーバーへの接続
 async function connectToServer() {
     if (socket) return;
-    
-    // サーバーが見つからない場合は再探索
-    if (discoveredServers.length === 0) {
-        const found = await discoverServers();
-        if (!found) {
-            updateStatus('サーバーが見つかりません。サーバーが起動しているか確認してください。');
-            return;
-        }
-    }
-    
     updateStatus(`サーバーに接続中... (${SERVER_URL})`);
-    
     socket = io(SERVER_URL, {
         transports: ['websocket', 'polling'],
         timeout: 20000,

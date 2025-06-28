@@ -12,7 +12,7 @@ const io = socketIo(server, {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // CORS設定
 app.use((req, res, next) => {
