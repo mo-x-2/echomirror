@@ -3,6 +3,7 @@ main.js
 renderer/
 node_modules/electron/
 node_modules/electron-builder/
+node_modules/@electron/
 
 # 開発用ファイル
 *.md
@@ -13,4 +14,8 @@ build/
 
 # ローカル設定
 .env
-.env.local 
+.env.local
+
+# その他の不要なファイル
+.DS_Store
+*.log 

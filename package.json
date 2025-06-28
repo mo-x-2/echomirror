@@ -19,14 +19,15 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.2",
+    "nodemon": "^3.0.2",
     "socket.io": "^4.7.4",
     "socket.io-client": "^4.7.4"
   },
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.6.4",
-    "nodemon": "^3.0.2"
+    "electron-builder": "^24.6.4"
   },
   "build": {
     "appId": "com.echomirror.app",
