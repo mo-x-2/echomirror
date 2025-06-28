@@ -284,30 +284,26 @@ function disconnectFromServer() {
 
 // WebRTC接続の開始
 function startWebRTCConnection() {
+    console.log('[DEBUG] startWebRTCConnection呼び出し');
     if (!localStream) {
-        console.error('ローカルストリームがありません');
+        console.error('[DEBUG] ローカルストリームがありません');
         return;
     }
-    
     if (peerConnection) {
-        console.log('既にWebRTC接続が存在します');
+        console.log('[DEBUG] 既にWebRTC接続が存在します');
         return;
     }
-    
-    console.log('WebRTC接続を開始します...');
+    console.log('[DEBUG] WebRTC接続を開始します...');
     connectionAttempts++;
-    console.log(`接続試行回数: ${connectionAttempts}`);
-    
+    console.log('[DEBUG] 接続試行回数:', connectionAttempts);
     createPeerConnection();
-    
-    // 最初に接続したクライアントがinitiatorになる
     if (isInitiator) {
-        console.log('InitiatorとしてOfferを作成します');
+        console.log('[DEBUG] InitiatorとしてOfferを作成します');
         setTimeout(() => {
             createOffer();
         }, 500);
     } else {
-        console.log('Responderとして待機中...');
+        console.log('[DEBUG] Responderとして待機中...');
     }
 }
 
@@ -368,27 +364,23 @@ function openSecondWindow() {
 
 // WebRTC関連の処理
 function createPeerConnection() {
-    console.log('PeerConnectionを作成中...');
+    console.log('[DEBUG] PeerConnectionを作成中...');
     peerConnection = new RTCPeerConnection(rtcConfiguration);
-    
-    // ローカルストリームを追加
     if (localStream) {
-        console.log('ローカルストリームをPeerConnectionに追加');
+        console.log('[DEBUG] ローカルストリームをPeerConnectionに追加');
         localStream.getTracks().forEach(track => {
-            console.log(`トラックを追加: ${track.kind}`);
+            console.log('[DEBUG] トラックを追加:', track.kind);
             peerConnection.addTrack(track, localStream);
         });
+    } else {
+        console.warn('[DEBUG] localStreamが存在しません');
     }
-    
-    // ICE候補の処理
     peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
-            console.log('ICE候補を送信:', event.candidate.type);
+            console.log('[DEBUG] ICE候補を送信:', event.candidate);
             socket.emit('ice-candidate', { candidate: event.candidate });
         }
     };
-    
-    // リモートストリームの処理
     peerConnection.ontrack = (event) => {
         console.log('[DEBUG] ontrack: リモートストリームを受信', event.streams);
         remoteVideo.srcObject = event.streams[0];
@@ -396,22 +388,17 @@ function createPeerConnection() {
         updateRemoteVideoVisibility();
         updateDebugInfo();
     };
-    
-    // 接続状態の監視
     peerConnection.onconnectionstatechange = () => {
         console.log('[DEBUG] WebRTC接続状態:', peerConnection.connectionState);
         updateWebRTCStatus(peerConnection.connectionState);
         updateDebugInfo();
     };
-    
     peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE接続状態:', peerConnection.iceConnectionState);
+        console.log('[DEBUG] ICE接続状態:', peerConnection.iceConnectionState);
     };
-    
     peerConnection.onicegatheringstatechange = () => {
-        console.log('ICE収集状態:', peerConnection.iceGatheringState);
+        console.log('[DEBUG] ICE収集状態:', peerConnection.iceGatheringState);
     };
-    
     return peerConnection;
 }
 
@@ -421,75 +408,67 @@ async function createOffer() {
         console.error('PeerConnectionがありません');
         return;
     }
-    
     try {
-        console.log('Offerを作成中...');
+        console.log('[DEBUG] Offerを作成中...');
         const offer = await peerConnection.createOffer();
-        console.log('Offer作成完了:', offer.type);
+        console.log('[DEBUG] Offer作成完了:', offer);
         await peerConnection.setLocalDescription(offer);
-        console.log('ローカルDescription設定完了');
-        
+        console.log('[DEBUG] ローカルDescription設定完了:', peerConnection.localDescription);
         socket.emit('offer', { offer });
-        console.log('Offerを送信しました');
+        console.log('[DEBUG] Offerを送信しました:', offer);
     } catch (error) {
-        console.error('Offer作成エラー:', error);
+        console.error('[DEBUG] Offer作成エラー:', error);
     }
 }
 
 // Offerの処理
 async function handleOffer(data) {
-    console.log('Offerを受信しました:', data.from);
-    
+    console.log('[DEBUG] Offerを受信:', data);
     if (!peerConnection) {
-        console.log('新しいPeerConnectionを作成');
+        console.log('[DEBUG] 新しいPeerConnectionを作成');
         createPeerConnection();
     }
-    
     try {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        console.log('リモートDescription設定完了');
-        
+        console.log('[DEBUG] リモートDescription設定完了:', peerConnection.remoteDescription);
         const answer = await peerConnection.createAnswer();
-        console.log('Answer作成完了:', answer.type);
+        console.log('[DEBUG] Answer作成完了:', answer);
         await peerConnection.setLocalDescription(answer);
-        console.log('ローカルDescription設定完了');
-        
+        console.log('[DEBUG] ローカルDescription設定完了:', peerConnection.localDescription);
         socket.emit('answer', { answer });
-        console.log('Answerを送信しました');
+        console.log('[DEBUG] Answerを送信しました:', answer);
     } catch (error) {
-        console.error('Offer処理エラー:', error);
+        console.error('[DEBUG] Offer処理エラー:', error);
     }
 }
 
 // Answerの処理
 async function handleAnswer(data) {
-    console.log('Answerを受信しました:', data.from);
-    
+    console.log('[DEBUG] Answerを受信:', data);
     if (peerConnection) {
         try {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            console.log('リモートDescription設定完了');
+            console.log('[DEBUG] リモートDescription設定完了:', peerConnection.remoteDescription);
         } catch (error) {
-            console.error('Answer処理エラー:', error);
+            console.error('[DEBUG] Answer処理エラー:', error);
         }
     } else {
-        console.error('PeerConnectionがありません');
+        console.error('[DEBUG] PeerConnectionがありません');
     }
 }
 
 // ICE候補の処理
 async function handleIceCandidate(data) {
-    console.log('ICE候補を受信:', data.from);
-    
+    console.log('[DEBUG] ICE候補を受信:', data);
     if (peerConnection) {
         try {
             await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-            console.log('ICE候補追加完了');
+            console.log('[DEBUG] ICE候補追加完了:', data.candidate);
         } catch (error) {
-            console.error('ICE候補処理エラー:', error);
+            console.error('[DEBUG] ICE候補処理エラー:', error);
         }
     } else {
-        console.error('PeerConnectionがありません');
+        console.error('[DEBUG] PeerConnectionがありません');
     }
 }
 
