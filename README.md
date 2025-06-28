@@ -17,10 +17,10 @@ EchoMirrorは、2台のPCで専用アプリケーションを起動し、両者�
 
 ## 技術スタック
 
-- **クライアント**: Electron
+- **クライアント**: Electron + TensorFlow.js (BlazeFace)
 - **サーバー**: Node.js + Socket.IO
 - **映像通信**: WebRTC
-- **人検出**: 肌色検出アルゴリズム
+- **人検出**: TensorFlow.js (BlazeFace)
 
 ## セットアップ
 
@@ -81,42 +81,21 @@ npm run client
 
 #### サーバーのデプロイ
 
-**Herokuでのデプロイ例：**
+**Railwayでのデプロイ例：**
 
-1. Herokuアカウントを作成
-2. Heroku CLIをインストール
-3. アプリケーションをデプロイ
-
-```bash
-# Herokuにログイン
-heroku login
-
-# アプリケーションを作成
-heroku create your-echomirror-app
-
-# デプロイ
-git push heroku main
-
-# アプリケーションを起動
-heroku ps:scale web=1
-```
+1. Railwayアカウントを作成
+2. Railwayにリポジトリを接続
+3. デプロイ（`npm start`で`server/index.js`が起動するように設定）
 
 4. デプロイされたURLを取得
-```bash
-heroku info
-```
+
+例: `https://echomirror-production.up.railway.app/`
 
 #### クライアント側の設定
 
-環境変数でサーバーURLを設定：
-```bash
-# macOS/Linux
-export SERVER_URL=https://your-echomirror-app.herokuapp.com
-npm run client
-
-# Windows
-set SERVER_URL=https://your-echomirror-app.herokuapp.com
-npm run client
+`renderer/renderer.js` の `SERVER_URL` をRailwayのURLに直接書き換えてください：
+```js
+let SERVER_URL = 'https://echomirror-production.up.railway.app';
 ```
 
 または、`config.js` の `production.serverUrl` を更新。
@@ -139,31 +118,26 @@ npm run client
 
 ## トラブルシューティング
 
-### 接続できない場合
+### サーバーが外部公開できない場合
 
-1. **ファイアウォールの設定**
-   - ポート3000が開放されているか確認
-   - ローカルネットワークの場合、ファイアウォールでポートを許可
+- `server.listen(PORT, '0.0.0.0', ...)` でバインドしているか確認
+- `.railwayignore`で必要なファイルを除外しすぎていないか確認
+- RailwayのDeploy Logs/Healthcheckを確認
 
-2. **ネットワーク設定**
-   - サーバーPCのIPアドレスが正しいか確認
-   - 両PCが同じネットワークに接続されているか確認
+### WebRTC接続ができない・映像が表示されない場合
 
-3. **WebRTC接続の問題**
-   - STUNサーバーが利用可能か確認
-   - 企業ネットワークの場合、WebRTCがブロックされている可能性
+- サーバー・クライアント間のInitiator判定やシグナリング開始タイミングに問題がある可能性
+- サーバーから`initiatorId`が正しくemitされているか、クライアントで受信できているか確認
+- 両方のクライアントで`isInitiator`が正しくセットされているか、DEBUGログで確認
+- Offer/Answer/ICE Candidateの送受信ログが出ているか確認
+- NATや企業ネットワーク環境ではWebRTCがブロックされる場合あり
 
 ### 人検出が動作しない場合
 
-1. **カメラの権限**
-   - カメラへのアクセスが許可されているか確認
-   - ブラウザの設定でカメラを許可
+- カメラの権限が許可されているか確認
+- 照明条件が十分か確認
 
-2. **照明条件**
-   - 十分な明るさがあるか確認
-   - 逆光を避ける
-
-## 開発フェーズ
+## 開発フェーズ・進捗
 
 ### フェーズ1: 基盤構築 ✅
 - [x] Electronアプリの雛形作成
@@ -186,6 +160,21 @@ npm run client
 
 ### フェーズ5: 演出 ✅
 - [x] CSSアニメーションでフェードイン/アウト演出
+
+### フェーズ6: サーバー外部公開・クラウド対応 ✅
+- [x] Railwayでのサーバーデプロイ・外部公開
+- [x] ヘルスチェック・CORS対応
+
+### フェーズ7: WebRTC安定化・同期トリガー再設計 🚧
+- [ ] Initiator判定・シグナリング開始の安定化
+- [ ] 映像共有の安定動作
+
+## 現状の課題・メモ
+
+- サーバーの外部公開・デプロイ問題は解決
+- **WebRTCのトリガー（Initiator判定・シグナリング開始）が拗れて、映像共有が動作しなくなっている**
+- Initiator判定・WebRTCトリガーのロジックを再設計し、確実に片方がInitiatorとなるようにする必要あり
+- シグナリングの流れ（Offer/Answer/ICE Candidate）が必ず発火するように、サーバー・クライアント両方のイベント設計を見直す必要あり
 
 ## プロジェクト構造
 
