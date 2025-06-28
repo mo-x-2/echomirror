@@ -1,0 +1,57 @@
+// EchoMirror 設定ファイル
+// 環境に応じて設定を変更してください
+
+module.exports = {
+    // ローカル開発環境（同一PC内でのテスト）
+    local: {
+        serverUrl: 'http://localhost:3000',
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ],
+        autoDiscovery: false // ローカルでは自動発見を無効
+    },
+    
+    // ローカルネットワーク環境（同一ネットワーク内の異なるPC）
+    localNetwork: {
+        serverUrl: 'http://192.168.1.100:3000', // 手動設定（自動発見が失敗した場合のフォールバック）
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+        ],
+        autoDiscovery: true, // 自動サーバー発見を有効
+        discoveryTimeout: 5000 // 発見タイムアウト（ミリ秒）
+    },
+    
+    // クラウド環境（インターネット経由）
+    cloud: {
+        serverUrl: 'https://your-server-domain.com:3000', // 実際のサーバーURLに変更
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+        ],
+        autoDiscovery: false // クラウドでは自動発見を無効
+    },
+    
+    // 現在の環境設定
+    // 'local', 'localNetwork', 'cloud' のいずれかを選択
+    currentEnvironment: 'localNetwork',
+    
+    // デバッグ設定
+    debug: {
+        enabled: true,
+        logLevel: 'info', // 'error', 'warn', 'info', 'debug'
+        showConnectionDetails: true
+    },
+    
+    // WebRTC設定
+    webrtc: {
+        maxRetries: 3,
+        connectionTimeout: 10000,
+        iceTimeout: 5000
+    }
+}; 

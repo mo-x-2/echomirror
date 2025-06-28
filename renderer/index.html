@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoMirror</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>EchoMirror</h1>
+            <div class="connection-status">
+                <span id="status-text">接続中...</span>
+                <span id="client-count">接続数: 0</span>
+                <span id="webrtc-status">WebRTC: 未接続</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="video-container">
+                <div class="video-section">
+                    <h3>自分の映像</h3>
+                    <video id="local-video" autoplay muted playsinline></video>
+                    <div class="looking-indicator">
+                        <span id="looking-status">人検出状態: 初期化中...</span>
+                    </div>
+                </div>
+
+                <div class="video-section">
+                    <h3>相手の映像</h3>
+                    <div class="remote-video-container">
+                        <video id="remote-video" autoplay playsinline></video>
+                        <div id="remote-placeholder" class="remote-placeholder">
+                            <p>相手がカメラに映るまでお待ちください</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="connect-btn" class="btn primary">サーバーに接続</button>
+                <button id="disconnect-btn" class="btn secondary" disabled>切断</button>
+                <button id="test-btn" class="btn tertiary">テスト用: 2つ目のウィンドウを開く</button>
+                <button id="detection-toggle" class="btn info" disabled>人検出: 開始</button>
+            </div>
+
+            <div class="debug-info">
+                <h4>デバッグ情報</h4>
+                <div id="debug-content">
+                    <p>接続状態: <span id="debug-connection">未接続</span></p>
+                    <p>WebRTC状態: <span id="debug-webrtc">未接続</span></p>
+                    <p>ローカル人検出: <span id="debug-local-detection">未検出</span></p>
+                    <p>相手人検出: <span id="debug-peer-detection">未検出</span></p>
+                    <p>検出精度: <span id="debug-confidence">非アクティブ</span></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    
+    <!-- アプリケーションスクリプト -->
+    <script src="face-detection.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html> 
