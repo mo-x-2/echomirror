@@ -234,9 +234,9 @@ async function connectToServer() {
         }
     });
     
-    socket.on('peerLookingState', (data) => {
-        peerLookingState = data.isLooking;
-        console.log(`相手の人検出状態: ${data.isLooking}`);
+    socket.on('peerPersonDetected', (data) => {
+        peerLookingState = data.isDetected;
+        console.log(`相手の人検出状態: ${data.isDetected}`);
         updateRemoteVideoVisibility();
         updateDebugInfo();
     });
