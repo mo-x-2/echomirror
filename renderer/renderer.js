@@ -47,14 +47,27 @@ const rtcConfiguration = {
 };
 
 // サーバーURLを取得する関数
-function getServerURL() {
+async function getServerURL() {
     // 環境変数から取得（本番環境用）
     if (process.env.SERVER_URL) {
         return process.env.SERVER_URL;
     }
     
-    // ローカル開発用
-    return 'http://localhost:3000';
+    // 設定から取得
+    try {
+        let config;
+        if (window.appConfig) {
+            config = window.appConfig;
+        } else {
+            const { ipcRenderer } = require('electron');
+            config = await ipcRenderer.invoke('get-config');
+        }
+        return config.localNetwork.serverUrl;
+    } catch (error) {
+        console.error('設定の取得に失敗しました:', error);
+        // フォールバック
+        return 'http://localhost:3000';
+    }
 }
 
 // サーバー発見機能
@@ -64,8 +77,27 @@ async function discoverServers() {
     
     discoveredServers = [];
     
-    // 設定ファイルからサーバーIPを取得
-    const config = require('../../config.js');
+    // 設定を取得
+    let config;
+    try {
+        // まずwindow.appConfigを試す
+        if (window.appConfig) {
+            config = window.appConfig;
+        } else {
+            // IPCを使用して設定を取得
+            const { ipcRenderer } = require('electron');
+            config = await ipcRenderer.invoke('get-config');
+        }
+    } catch (error) {
+        console.error('設定の取得に失敗しました:', error);
+        // フォールバック設定
+        config = {
+            localNetwork: {
+                serverUrl: 'http://192.168.10.12:3000'
+            }
+        };
+    }
+    
     const serverIP = config.localNetwork.serverUrl.replace('http://', '').replace(':3000', '');
     console.log(`設定されたサーバーIP: ${serverIP}`);
     
@@ -103,6 +135,11 @@ async function discoverServers() {
 async function initialize() {
     setupEventListeners();
     await initializeLocalVideo();
+    
+    // サーバーURLを取得
+    SERVER_URL = await getServerURL();
+    console.log('初期サーバーURL:', SERVER_URL);
+    
     updateDebugInfo();
     
     // サーバー発見を試行
