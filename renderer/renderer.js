@@ -222,13 +222,21 @@ async function connectToServer() {
     socket.on('clientCount', (count) => {
         clientCount.textContent = `接続数: ${count}`;
         console.log(`接続中のクライアント数: ${count}`);
-        
+
+        // initiator判定
+        if (count === 1) {
+            isInitiator = true;
+            console.log('このクライアントがInitiatorです');
+        } else {
+            isInitiator = false;
+        }
+
         // 2人以上接続したらWebRTC接続を開始
         if (count >= 2) {
             console.log('2人以上接続しました。WebRTC接続を開始します...');
             setTimeout(() => {
                 startWebRTCConnection();
-            }, 1000); // 少し遅延を入れて確実に接続
+            }, 1000);
         }
     });
     
@@ -486,14 +494,6 @@ async function handleIceCandidate(data) {
 // ピア接続の処理
 function handlePeerConnected(data) {
     console.log('新しいピアが接続されました:', data.peerId);
-    connectedPeers.add(data.peerId);
-    
-    // 最初に接続したクライアントがinitiatorになる
-    if (connectedPeers.size === 1) {
-        isInitiator = true;
-        console.log('最初のピアとしてInitiatorに設定');
-    }
-    
     updateDebugInfo();
 }
 
