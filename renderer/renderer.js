@@ -121,20 +121,20 @@ async function initializeFaceDetection() {
 async function toggleDetection() {
     if (!faceDetectionManager) return;
     if (isDetectionActive) {
-        // 検出停止
         faceDetectionManager.stopDetection();
         isDetectionActive = false;
         detectionToggleBtn.textContent = '人検出: 開始';
         detectionToggleBtn.classList.remove('active');
         lookingStatus.textContent = '人検出状態: 停止中';
+        console.log('[DEBUG] 人検出停止: localLookingState=false');
         updateLookingState(false);
     } else {
-        // 検出開始
         await faceDetectionManager.startDetection();
         isDetectionActive = true;
         detectionToggleBtn.textContent = '人検出: 停止';
         detectionToggleBtn.classList.add('active');
         lookingStatus.textContent = '人検出状態: 検出中';
+        console.log('[DEBUG] 人検出開始: localLookingState=true');
     }
 }
 
@@ -147,11 +147,11 @@ function updateLookingState(isPersonDetected) {
     lookingStatus.textContent = `人検出状態: ${statusText}`;
     lookingStatus.style.background = statusColor;
     lookingStatus.style.color = textColor;
-    // サーバーに視線状態を送信
     if (socket && isConnected) {
+        console.log(`[DEBUG] サーバーにpersonDetected送信: ${isPersonDetected}`);
         socket.emit('personDetected', isPersonDetected);
     }
-    // 相手の映像表示制御
+    console.log(`[DEBUG] updateLookingState: localLookingState=${localLookingState}, peerLookingState=${peerLookingState}, hasRemoteStream=${hasRemoteStream}`);
     updateRemoteVideoVisibility();
     updateDebugInfo();
 }
@@ -159,6 +159,7 @@ function updateLookingState(isPersonDetected) {
 // 相手の映像表示制御
 function updateRemoteVideoVisibility() {
     const shouldShow = localLookingState && peerLookingState && hasRemoteStream && peerConnection && peerConnection.connectionState === 'connected';
+    console.log(`[DEBUG] updateRemoteVideoVisibility: shouldShow=${shouldShow}, localLookingState=${localLookingState}, peerLookingState=${peerLookingState}, hasRemoteStream=${hasRemoteStream}, peerConnectionState=${peerConnection ? peerConnection.connectionState : 'none'}`);
     if (shouldShow) {
         showRemoteVideo();
     } else {
@@ -169,7 +170,7 @@ function updateRemoteVideoVisibility() {
 // 相手の映像を表示
 function showRemoteVideo() {
     if (remotePlaceholder.classList.contains('hidden')) return;
-    
+    console.log('[DEBUG] showRemoteVideo: 映像表示');
     remotePlaceholder.classList.add('fade-out');
     setTimeout(() => {
         remotePlaceholder.classList.add('hidden');
@@ -180,7 +181,7 @@ function showRemoteVideo() {
 // 相手の映像を非表示
 function hideRemoteVideo() {
     if (!remotePlaceholder.classList.contains('hidden')) return;
-    
+    console.log('[DEBUG] hideRemoteVideo: 映像非表示');
     remoteVideo.classList.remove('fade-in');
     remotePlaceholder.classList.remove('hidden', 'fade-out');
 }
@@ -235,8 +236,15 @@ async function connectToServer() {
     });
     
     socket.on('peerPersonDetected', (data) => {
+        console.log(`[DEBUG] peerPersonDetected受信:`, data);
         peerLookingState = data.isDetected;
-        console.log(`相手の人検出状態: ${data.isDetected}`);
+        updateRemoteVideoVisibility();
+        updateDebugInfo();
+    });
+    
+    socket.on('peerLookingState', (data) => {
+        console.log(`[DEBUG] peerLookingState受信:`, data);
+        peerLookingState = data.isLooking;
         updateRemoteVideoVisibility();
         updateDebugInfo();
     });
@@ -382,8 +390,7 @@ function createPeerConnection() {
     
     // リモートストリームの処理
     peerConnection.ontrack = (event) => {
-        console.log('リモートストリームを受信しました');
-        console.log('ストリーム数:', event.streams.length);
+        console.log('[DEBUG] ontrack: リモートストリームを受信', event.streams);
         remoteVideo.srcObject = event.streams[0];
         hasRemoteStream = true;
         updateRemoteVideoVisibility();
@@ -392,7 +399,7 @@ function createPeerConnection() {
     
     // 接続状態の監視
     peerConnection.onconnectionstatechange = () => {
-        console.log('WebRTC接続状態:', peerConnection.connectionState);
+        console.log('[DEBUG] WebRTC接続状態:', peerConnection.connectionState);
         updateWebRTCStatus(peerConnection.connectionState);
         updateDebugInfo();
     };
