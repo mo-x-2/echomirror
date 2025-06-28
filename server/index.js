@@ -97,7 +97,7 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`EchoMirror サーバーがポート ${PORT} で起動しました`);
     console.log(`ヘルスチェック: http://localhost:${PORT}/health`);
     console.log(`サーバー情報: http://localhost:${PORT}/`);

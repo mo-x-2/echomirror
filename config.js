@@ -46,7 +46,7 @@ module.exports = {
     
     // 本番環境設定
     production: {
-        serverUrl: 'https://your-railway-app.up.railway.app', // Railwayデプロイ後のURL
+ // Railwayデプロイ後のURL
         autoDiscover: false, // 本番環境では自動発見を無効
         discoveryTimeout: 3000
     },
