@@ -258,10 +258,14 @@ async function connectToServer() {
         updateStatus('接続タイムアウトが発生しました');
     });
 
-    socket.on('initiatorId', (id) => {
-        isInitiator = (socket.id === id);
-        console.log('[DEBUG] initiatorId受信:', id, '自分のID:', socket.id, 'isInitiator:', isInitiator);
-    });
+    // サーバーからinitiatorIdを受信してisInitiatorをセット
+    if (typeof io !== 'undefined') {
+        const globalSocket = io();
+        globalSocket.on('initiatorId', (id) => {
+            isInitiator = (globalSocket.id === id);
+            console.log('[DEBUG] initiatorId受信:', id, '自分のID:', globalSocket.id, 'isInitiator:', isInitiator);
+        });
+    }
 }
 
 // サーバーからの切断
