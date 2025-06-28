@@ -120,7 +120,6 @@ async function initializeFaceDetection() {
 // 人検出の開始/停止
 async function toggleDetection() {
     if (!faceDetectionManager) return;
-    
     if (isDetectionActive) {
         // 検出停止
         faceDetectionManager.stopDetection();
@@ -142,20 +141,16 @@ async function toggleDetection() {
 // 視線状態の更新（人検出結果）
 function updateLookingState(isPersonDetected) {
     localLookingState = isPersonDetected;
-    
     const statusText = isPersonDetected ? '人を検出中' : '人を検出していません';
     const statusColor = isPersonDetected ? '#c6f6d5' : '#fed7d7';
     const textColor = isPersonDetected ? '#22543d' : '#742a2a';
-    
     lookingStatus.textContent = `人検出状態: ${statusText}`;
     lookingStatus.style.background = statusColor;
     lookingStatus.style.color = textColor;
-    
     // サーバーに視線状態を送信
     if (socket && isConnected) {
-        socket.emit('updateLookingState', { isLooking: isPersonDetected });
+        socket.emit('personDetected', isPersonDetected);
     }
-    
     // 相手の映像表示制御
     updateRemoteVideoVisibility();
     updateDebugInfo();
@@ -163,8 +158,7 @@ function updateLookingState(isPersonDetected) {
 
 // 相手の映像表示制御
 function updateRemoteVideoVisibility() {
-    const shouldShow = localLookingState && peerLookingState && hasRemoteStream;
-    
+    const shouldShow = localLookingState && peerLookingState && hasRemoteStream && peerConnection && peerConnection.connectionState === 'connected';
     if (shouldShow) {
         showRemoteVideo();
     } else {
@@ -346,6 +340,7 @@ function updateWebRTCStatus(status) {
     } else {
         webrtcStatus.classList.remove('connected');
     }
+    updateRemoteVideoVisibility();
 }
 
 // デバッグ情報の更新
