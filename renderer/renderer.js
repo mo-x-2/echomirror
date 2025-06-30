@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const TWILIO_USERNAME = window.twilioConfig?.username;
   const TWILIO_PASSWORD = window.twilioConfig?.password;
 
-  // 以降、rtcConfigurationや初期化処理もこの中で行う
   const rtcConfiguration = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -78,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ]
   };
 
-  // ここでinitialize()などを呼ぶ
+  // initializeにrtcConfigurationを渡す
   initialize(rtcConfiguration);
 });
 
@@ -90,10 +89,72 @@ async function initialize(rtcConfiguration) {
     updateStatus(`接続先: ${SERVER_URL}`);
     
     // Twilio TURN認証情報の確認
+    const TWILIO_USERNAME = window.twilioConfig?.username;
+    const TWILIO_PASSWORD = window.twilioConfig?.password;
     console.log('[DEBUG] Twilio TURN設定確認:');
     console.log('[DEBUG] - Username:', TWILIO_USERNAME);
     console.log('[DEBUG] - Password:', TWILIO_PASSWORD ? '***設定済み***' : '***未設定***');
-    console.log('[DEBUG] - TURN有効:', TWILIO_USERNAME !== 'YOUR_TWILIO_USERNAME');
+    console.log('[DEBUG] - TURN有効:', !!TWILIO_USERNAME);
+
+    // PeerConnection生成関数もここで定義
+    window.createPeerConnection = function() {
+      console.log('[DEBUG] PeerConnectionを作成中...');
+      peerConnection = new RTCPeerConnection(rtcConfiguration);
+      if (localStream) {
+          console.log('[DEBUG] ローカルストリームをPeerConnectionに追加');
+          localStream.getTracks().forEach(track => {
+              console.log('[DEBUG] トラックを追加:', track.kind);
+              peerConnection.addTrack(track, localStream);
+          });
+      } else {
+          console.warn('[DEBUG] localStreamが存在しません');
+      }
+      peerConnection.onicecandidate = (event) => {
+          if (event.candidate && socket) {
+              console.log('[DEBUG] ICE候補を送信:', event.candidate);
+              // ICE候補の詳細情報をログ出力
+              if (event.candidate.candidate) {
+                  const candidateStr = event.candidate.candidate;
+                  if (candidateStr.includes('relay')) {
+                      console.log('[DEBUG] TURNサーバー経由のICE候補:', candidateStr);
+                      // TURNサーバーの詳細をログ出力
+                      const relayMatch = candidateStr.match(/relay\s+([^\s]+)/);
+                      if (relayMatch) {
+                          console.log('[DEBUG] 使用中のTURNサーバー:', relayMatch[1]);
+                      }
+                  } else if (candidateStr.includes('srflx')) {
+                      console.log('[DEBUG] STUNサーバー経由のICE候補:', candidateStr);
+                  } else {
+                      console.log('[DEBUG] ローカルICE候補:', candidateStr);
+                  }
+              }
+              socket.emit('ice-candidate', { candidate: event.candidate });
+          }
+      };
+      peerConnection.ontrack = (event) => {
+          console.log('[DEBUG] ontrack: リモートストリームを受信', event.streams);
+          remoteVideo.srcObject = event.streams[0];
+          hasRemoteStream = true;
+          updateRemoteVideoVisibility();
+          updateDebugInfo();
+      };
+      peerConnection.onconnectionstatechange = () => {
+          console.log('[DEBUG] WebRTC接続状態:', peerConnection.connectionState);
+          updateWebRTCStatus(peerConnection.connectionState);
+          updateDebugInfo();
+      };
+      peerConnection.oniceconnectionstatechange = () => {
+          console.log('[DEBUG] ICE接続状態:', peerConnection.iceConnectionState);
+          // ICE接続状態の詳細ログ
+          if (peerConnection.iceConnectionState === 'failed') {
+              console.error('[DEBUG] ICE接続失敗: TURNサーバーが必要な可能性があります');
+          }
+      };
+      peerConnection.onicegatheringstatechange = () => {
+          console.log('[DEBUG] ICE収集状態:', peerConnection.iceGatheringState);
+      };
+      return peerConnection;
+    };
 }
 
 // イベントリスナーの設定
