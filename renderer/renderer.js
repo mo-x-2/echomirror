@@ -392,7 +392,40 @@ function startWebRTCConnection() {
     console.log('[DEBUG] WebRTC接続を開始します...');
     connectionAttempts++;
     console.log('[DEBUG] 接続試行回数:', connectionAttempts);
-    createPeerConnection();
+    
+    // rtcConfigurationを引数で渡す
+    const rtcConfig = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            // Twilio TURNサーバー（NAT越えのため）
+            {
+                urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                username: window.twilioConfig?.username,
+                credential: window.twilioConfig?.password
+            },
+            {
+                urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+                username: window.twilioConfig?.username,
+                credential: window.twilioConfig?.password
+            },
+            {
+                urls: 'turn:global.turn.twilio.com:443?transport=tcp',
+                username: window.twilioConfig?.username,
+                credential: window.twilioConfig?.password
+            },
+            {
+                urls: 'turn:global.turn.twilio.com:443',
+                username: window.twilioConfig?.username,
+                credential: window.twilioConfig?.password
+            }
+        ]
+    };
+    
+    createPeerConnection(rtcConfig);
     if (isInitiator) {
         console.log('[DEBUG] InitiatorとしてOfferを作成します');
         setTimeout(() => {
@@ -459,7 +492,7 @@ function openSecondWindow() {
 }
 
 // WebRTC関連の処理
-function createPeerConnection() {
+function createPeerConnection(rtcConfiguration) {
     console.log('[DEBUG] PeerConnectionを作成中...');
     peerConnection = new RTCPeerConnection(rtcConfiguration);
     if (localStream) {
@@ -542,7 +575,38 @@ async function handleOffer(data) {
     console.log('[DEBUG] Offerを受信:', data);
     if (!peerConnection) {
         console.log('[DEBUG] 新しいPeerConnectionを作成');
-        createPeerConnection();
+        // rtcConfigurationを引数で渡す
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                // Twilio TURNサーバー（NAT越えのため）
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                    username: window.twilioConfig?.username,
+                    credential: window.twilioConfig?.password
+                },
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+                    username: window.twilioConfig?.username,
+                    credential: window.twilioConfig?.password
+                },
+                {
+                    urls: 'turn:global.turn.twilio.com:443?transport=tcp',
+                    username: window.twilioConfig?.username,
+                    credential: window.twilioConfig?.password
+                },
+                {
+                    urls: 'turn:global.turn.twilio.com:443',
+                    username: window.twilioConfig?.username,
+                    credential: window.twilioConfig?.password
+                }
+            ]
+        };
+        createPeerConnection(rtcConfig);
     }
     try {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -607,9 +671,6 @@ function cleanup() {
         faceDetectionManager.cleanup();
     }
 }
-
-// アプリケーションの初期化
-document.addEventListener('DOMContentLoaded', initialize);
 
 // アプリケーション終了時のクリーンアップ
 window.addEventListener('beforeunload', cleanup); 
