@@ -393,6 +393,16 @@ function startWebRTCConnection() {
     connectionAttempts++;
     console.log('[DEBUG] 接続試行回数:', connectionAttempts);
     
+    // Twilio TURN認証情報の確認
+    const TWILIO_USERNAME = window.twilioConfig?.username;
+    const TWILIO_PASSWORD = window.twilioConfig?.password;
+    const hasValidTwilioConfig = TWILIO_USERNAME && TWILIO_PASSWORD;
+    
+    console.log('[DEBUG] TURN設定詳細確認:');
+    console.log('[DEBUG] - Username:', TWILIO_USERNAME);
+    console.log('[DEBUG] - Password:', TWILIO_PASSWORD ? '***設定済み***' : '***未設定***');
+    console.log('[DEBUG] - 有効な設定:', hasValidTwilioConfig);
+    
     // rtcConfigurationを引数で渡す
     const rtcConfig = {
         iceServers: [
@@ -400,31 +410,40 @@ function startWebRTCConnection() {
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' },
-            // Twilio TURNサーバー（NAT越えのため）
-            {
-                urls: 'turn:global.turn.twilio.com:3478?transport=udp',
-                username: window.twilioConfig?.username,
-                credential: window.twilioConfig?.password
-            },
-            {
-                urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
-                username: window.twilioConfig?.username,
-                credential: window.twilioConfig?.password
-            },
-            {
-                urls: 'turn:global.turn.twilio.com:443?transport=tcp',
-                username: window.twilioConfig?.username,
-                credential: window.twilioConfig?.password
-            },
-            {
-                urls: 'turn:global.turn.twilio.com:443',
-                username: window.twilioConfig?.username,
-                credential: window.twilioConfig?.password
-            }
+            { urls: 'stun:stun4.l.google.com:19302' }
         ]
     };
     
+    // Twilio TURNサーバー（認証情報が有効な場合のみ追加）
+    if (hasValidTwilioConfig) {
+        console.log('[DEBUG] TURNサーバーを追加します');
+        rtcConfig.iceServers.push(
+            {
+                urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                username: TWILIO_USERNAME,
+                credential: TWILIO_PASSWORD
+            },
+            {
+                urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+                username: TWILIO_USERNAME,
+                credential: TWILIO_PASSWORD
+            },
+            {
+                urls: 'turn:global.turn.twilio.com:443?transport=tcp',
+                username: TWILIO_USERNAME,
+                credential: TWILIO_PASSWORD
+            },
+            {
+                urls: 'turn:global.turn.twilio.com:443',
+                username: TWILIO_USERNAME,
+                credential: TWILIO_PASSWORD
+            }
+        );
+    } else {
+        console.warn('[DEBUG] TURNサーバー設定が無効なため、STUNサーバーのみを使用します');
+    }
+    
+    console.log('[DEBUG] 最終的なICE設定:', rtcConfig.iceServers);
     createPeerConnection(rtcConfig);
     if (isInitiator) {
         console.log('[DEBUG] InitiatorとしてOfferを作成します');
@@ -575,6 +594,12 @@ async function handleOffer(data) {
     console.log('[DEBUG] Offerを受信:', data);
     if (!peerConnection) {
         console.log('[DEBUG] 新しいPeerConnectionを作成');
+        
+        // Twilio TURN認証情報の確認
+        const TWILIO_USERNAME = window.twilioConfig?.username;
+        const TWILIO_PASSWORD = window.twilioConfig?.password;
+        const hasValidTwilioConfig = TWILIO_USERNAME && TWILIO_PASSWORD;
+        
         // rtcConfigurationを引数で渡す
         const rtcConfig = {
             iceServers: [
@@ -582,30 +607,39 @@ async function handleOffer(data) {
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                // Twilio TURNサーバー（NAT越えのため）
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+        };
+        
+        // Twilio TURNサーバー（認証情報が有効な場合のみ追加）
+        if (hasValidTwilioConfig) {
+            console.log('[DEBUG] TURNサーバーを追加します');
+            rtcConfig.iceServers.push(
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=udp',
-                    username: window.twilioConfig?.username,
-                    credential: window.twilioConfig?.password
+                    username: TWILIO_USERNAME,
+                    credential: TWILIO_PASSWORD
                 },
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
-                    username: window.twilioConfig?.username,
-                    credential: window.twilioConfig?.password
+                    username: TWILIO_USERNAME,
+                    credential: TWILIO_PASSWORD
                 },
                 {
                     urls: 'turn:global.turn.twilio.com:443?transport=tcp',
-                    username: window.twilioConfig?.username,
-                    credential: window.twilioConfig?.password
+                    username: TWILIO_USERNAME,
+                    credential: TWILIO_PASSWORD
                 },
                 {
                     urls: 'turn:global.turn.twilio.com:443',
-                    username: window.twilioConfig?.username,
-                    credential: window.twilioConfig?.password
+                    username: TWILIO_USERNAME,
+                    credential: TWILIO_PASSWORD
                 }
-            ]
-        };
+            );
+        } else {
+            console.warn('[DEBUG] TURNサーバー設定が無効なため、STUNサーバーのみを使用します');
+        }
+        
         createPeerConnection(rtcConfig);
     }
     try {
