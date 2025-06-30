@@ -42,7 +42,23 @@ const rtcConfiguration = {
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' }
+        { urls: 'stun:stun4.l.google.com:19302' },
+        // TURNサーバーを追加（NAT越えのため）
+        {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        }
     ]
 };
 
@@ -371,6 +387,17 @@ function createPeerConnection() {
     peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
             console.log('[DEBUG] ICE候補を送信:', event.candidate);
+            // ICE候補の詳細情報をログ出力
+            if (event.candidate.candidate) {
+                const candidateStr = event.candidate.candidate;
+                if (candidateStr.includes('relay')) {
+                    console.log('[DEBUG] TURNサーバー経由のICE候補:', candidateStr);
+                } else if (candidateStr.includes('srflx')) {
+                    console.log('[DEBUG] STUNサーバー経由のICE候補:', candidateStr);
+                } else {
+                    console.log('[DEBUG] ローカルICE候補:', candidateStr);
+                }
+            }
             socket.emit('ice-candidate', { candidate: event.candidate });
         }
     };
@@ -388,6 +415,10 @@ function createPeerConnection() {
     };
     peerConnection.oniceconnectionstatechange = () => {
         console.log('[DEBUG] ICE接続状態:', peerConnection.iceConnectionState);
+        // ICE接続状態の詳細ログ
+        if (peerConnection.iceConnectionState === 'failed') {
+            console.error('[DEBUG] ICE接続失敗: TURNサーバーが必要な可能性があります');
+        }
     };
     peerConnection.onicegatheringstatechange = () => {
         console.log('[DEBUG] ICE収集状態:', peerConnection.iceGatheringState);
