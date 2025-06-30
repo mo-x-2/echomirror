@@ -35,7 +35,8 @@ let discoveredServers = [];
 
 // 設定
 // サーバーURLを直接指定
-let SERVER_URL = 'https://echomirror-production.up.railway.app';
+//let SERVER_URL = 'https://echomirror-production.up.railway.app';
+let SERVER_URL = 'http://100.81.210.75:3000';
 const rtcConfiguration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
