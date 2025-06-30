@@ -37,43 +37,53 @@ let discoveredServers = [];
 // サーバーURLを直接指定
 let SERVER_URL = 'https://echomirror-production.up.railway.app';
 
-// Twilio TURN認証情報（config.jsからwindow.twilioConfig経由で取得）
-const TWILIO_USERNAME = window.twilioConfig?.username || 'YOUR_TWILIO_USERNAME';
-const TWILIO_PASSWORD = window.twilioConfig?.password || 'YOUR_TWILIO_PASSWORD';
+// Twilio TURN認証情報はwindow.twilioConfigからのみ取得
+// .envや環境変数はmain.jsでwindow.twilioConfigに渡される
+// ここではグローバル変数やハードコーディングはしない
 
-const rtcConfiguration = {
+document.addEventListener('DOMContentLoaded', () => {
+  // window.twilioConfigを参照する
+  const TWILIO_USERNAME = window.twilioConfig?.username;
+  const TWILIO_PASSWORD = window.twilioConfig?.password;
+
+  // 以降、rtcConfigurationや初期化処理もこの中で行う
+  const rtcConfiguration = {
     iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
-        // Twilio TURNサーバー（NAT越えのため）
-        {
-            urls: 'turn:global.turn.twilio.com:3478?transport=udp',
-            username: TWILIO_USERNAME,
-            credential: TWILIO_PASSWORD
-        },
-        {
-            urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
-            username: TWILIO_USERNAME,
-            credential: TWILIO_PASSWORD
-        },
-        {
-            urls: 'turn:global.turn.twilio.com:443?transport=tcp',
-            username: TWILIO_USERNAME,
-            credential: TWILIO_PASSWORD
-        },
-        {
-            urls: 'turn:global.turn.twilio.com:443',
-            username: TWILIO_USERNAME,
-            credential: TWILIO_PASSWORD
-        }
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      // Twilio TURNサーバー（NAT越えのため）
+      {
+        urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+        username: TWILIO_USERNAME,
+        credential: TWILIO_PASSWORD
+      },
+      {
+        urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+        username: TWILIO_USERNAME,
+        credential: TWILIO_PASSWORD
+      },
+      {
+        urls: 'turn:global.turn.twilio.com:443?transport=tcp',
+        username: TWILIO_USERNAME,
+        credential: TWILIO_PASSWORD
+      },
+      {
+        urls: 'turn:global.turn.twilio.com:443',
+        username: TWILIO_USERNAME,
+        credential: TWILIO_PASSWORD
+      }
     ]
-};
+  };
+
+  // ここでinitialize()などを呼ぶ
+  initialize(rtcConfiguration);
+});
 
 // 初期化
-async function initialize() {
+async function initialize(rtcConfiguration) {
     setupEventListeners();
     await initializeLocalVideo();
     updateDebugInfo();
