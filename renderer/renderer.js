@@ -217,14 +217,7 @@ async function connectToServer() {
     socket.on('clientCount', (count) => {
         clientCount.textContent = `接続数: ${count}`;
         console.log(`接続中のクライアント数: ${count}`);
-
-        // 2人以上接続したらWebRTC接続を開始
-        if (count >= 2) {
-            console.log('2人以上接続しました。WebRTC接続を開始します...');
-            setTimeout(() => {
-                startWebRTCConnection();
-            }, 1000);
-        }
+        // clientCountではWebRTC接続を開始しない
     });
     
     socket.on('peerPersonDetected', (data) => {
@@ -259,13 +252,12 @@ async function connectToServer() {
     });
 
     // サーバーからinitiatorIdを受信してisInitiatorをセット
-    if (typeof io !== 'undefined') {
-        const globalSocket = io();
-        globalSocket.on('initiatorId', (id) => {
-            isInitiator = (globalSocket.id === id);
-            console.log('[DEBUG] initiatorId受信:', id, '自分のID:', globalSocket.id, 'isInitiator:', isInitiator);
-        });
-    }
+    socket.on('initiatorId', (id) => {
+        isInitiator = (socket.id === id);
+        console.log('[DEBUG] initiatorId受信:', id, '自分のID:', socket.id, 'isInitiator:', isInitiator);
+        // initiatorIdを受信したタイミングでWebRTC接続を開始
+        startWebRTCConnection();
+    });
 }
 
 // サーバーからの切断

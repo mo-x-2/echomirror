@@ -58,8 +58,8 @@ io.on('connection', (socket) => {
     // 接続中のクライアント数をブロードキャスト
     io.emit('clientCount', connectedClients.size);
 
-    // initiatorIdを常にブロードキャスト
-    if (connectedClients.size >= 2) {
+    // initiatorIdは2人になったときだけemit
+    if (connectedClients.size === 2) {
         const initiatorId = Array.from(connectedClients.keys())[0];
         io.emit('initiatorId', initiatorId);
     }
@@ -97,7 +97,11 @@ io.on('connection', (socket) => {
         console.log('クライアントが切断されました:', socket.id);
         connectedClients.delete(socket.id);
         io.emit('clientCount', connectedClients.size);
-        
+        // クライアントが2人になった場合のみ再emit
+        if (connectedClients.size === 2) {
+            const initiatorId = Array.from(connectedClients.keys())[0];
+            io.emit('initiatorId', initiatorId);
+        }
         // 他のクライアントに切断を通知
         socket.broadcast.emit('peerDisconnected', socket.id);
     });
