@@ -27,6 +27,12 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(`
       window.appConfig = ${JSON.stringify(config)};
+      // config.jsからTwilio TURN認証情報を渡す
+      window.twilioConfig = {
+        username: '${config.twilio.username}',
+        password: '${config.twilio.password}',
+        enabled: ${config.twilio.enabled}
+      };
     `);
   });
 }

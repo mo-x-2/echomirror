@@ -2,6 +2,13 @@
 // 環境に応じて設定を変更してください
 
 module.exports = {
+    // Twilio TURN認証情報
+    twilio: {
+        username: process.env.TWILIO_USERNAME || 'AC9ba2f55255eea783f6292e0091ff890b',
+        password: process.env.TWILIO_PASSWORD || '3bf730da8aa4d94367b5c11402337db6',
+        enabled: process.env.TWILIO_ENABLED === 'true' || false
+    },
+    
     // ローカル開発環境（同一PC内でのテスト）
     local: {
         serverUrl: 'http://localhost:3000',

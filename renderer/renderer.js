@@ -36,6 +36,11 @@ let discoveredServers = [];
 // 設定
 // サーバーURLを直接指定
 let SERVER_URL = 'https://echomirror-production.up.railway.app';
+
+// Twilio TURN認証情報（config.jsからwindow.twilioConfig経由で取得）
+const TWILIO_USERNAME = window.twilioConfig?.username || 'YOUR_TWILIO_USERNAME';
+const TWILIO_PASSWORD = window.twilioConfig?.password || 'YOUR_TWILIO_PASSWORD';
+
 const rtcConfiguration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -43,32 +48,26 @@ const rtcConfiguration = {
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
-        // 無料で利用可能なTURNサーバー
+        // Twilio TURNサーバー（NAT越えのため）
         {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
+            urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+            username: TWILIO_USERNAME,
+            credential: TWILIO_PASSWORD
         },
         {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
+            urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+            username: TWILIO_USERNAME,
+            credential: TWILIO_PASSWORD
         },
         {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        },
-        // 追加の無料TURNサーバー
-        {
-            urls: 'turn:relay.backups.cz:3478',
-            username: 'webrtc',
-            credential: 'webrtc'
+            urls: 'turn:global.turn.twilio.com:443?transport=tcp',
+            username: TWILIO_USERNAME,
+            credential: TWILIO_PASSWORD
         },
         {
-            urls: 'turn:relay.backups.cz:3478?transport=tcp',
-            username: 'webrtc',
-            credential: 'webrtc'
+            urls: 'turn:global.turn.twilio.com:443',
+            username: TWILIO_USERNAME,
+            credential: TWILIO_PASSWORD
         }
     ]
 };
@@ -79,6 +78,12 @@ async function initialize() {
     await initializeLocalVideo();
     updateDebugInfo();
     updateStatus(`接続先: ${SERVER_URL}`);
+    
+    // Twilio TURN認証情報の確認
+    console.log('[DEBUG] Twilio TURN設定確認:');
+    console.log('[DEBUG] - Username:', TWILIO_USERNAME);
+    console.log('[DEBUG] - Password:', TWILIO_PASSWORD ? '***設定済み***' : '***未設定***');
+    console.log('[DEBUG] - TURN有効:', TWILIO_USERNAME !== 'YOUR_TWILIO_USERNAME');
 }
 
 // イベントリスナーの設定
