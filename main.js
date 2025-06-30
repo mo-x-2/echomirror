@@ -20,27 +20,15 @@ function createWindow() {
 
   mainWindow.loadFile('renderer/index.html');
   
-  // デバッグ: Twilio TURN認証情報を出力
-  console.log('[main.js][DEBUG] config.twilio:', config.twilio);
-  console.log('[main.js][DEBUG] process.env.TWILIO_USERNAME:', process.env.TWILIO_USERNAME);
-  console.log('[main.js][DEBUG] process.env.TWILIO_PASSWORD:', process.env.TWILIO_PASSWORD);
-
   // 開発時はDevToolsを開く
   if (process.env.NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools();
   }
   
-  // レンダラープロセスに設定を渡す
+  // レンダラープロセスに設定を渡す（Twilio TURN認証情報の記述は削除）
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(`
       window.appConfig = ${JSON.stringify(config)};
-      // config.jsからTwilio TURN認証情報を渡す
-      window.twilioConfig = {
-        username: '${process.env.TWILIO_USERNAME || config.twilio.username}',
-        password: '${process.env.TWILIO_PASSWORD || config.twilio.password}',
-        enabled: true
-      };
-      console.log('[renderer][DEBUG] window.twilioConfig:', window.twilioConfig);
     `);
   });
 }

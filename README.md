@@ -44,8 +44,33 @@ npm install
 
 ## 使用方法
 
-### 1. ローカル環境（同一PCでのテスト）
+### Tailscale（仮想LAN）環境での利用（推奨）
 
+#### 前提
+- 両方のPCに[Tailscale](https://tailscale.com/)をインストールし、同じTailnetに参加していること
+- それぞれのPCにTailscaleのIPアドレス（例: 100.x.x.x）が割り当てられていること
+
+#### サーバーPC側
+```bash
+# サーバーを起動（デフォルト: 8080ポート）
+npm run server
+```
+
+#### クライアントPC側
+1. `renderer/renderer.js` の `SERVER_URL` をサーバーPCのTailscale IPアドレス＋ポート番号（例: `http://100.81.210.75:8080`）に書き換える
+2. アプリケーションを起動
+```bash
+npm run client
+```
+
+#### ポイント
+- Tailscaleを使うことで、異なるWi-Fiやネットワーク環境でも安定して通信可能
+- サーバーのポート番号（デフォルト: 8080）に注意
+- サーバーPCのファイアウォールで8080ポートが開いていることを確認
+
+### その他の環境（参考）
+
+#### ローカル環境（同一PCでのテスト）
 ```bash
 # サーバーを起動
 npm run server
@@ -57,48 +82,9 @@ npm run client
 npm run client
 ```
 
-### 2. ローカルネットワーク環境（同一LAN内の異なるPC）
-
-#### サーバーPC側
-```bash
-# サーバーを起動
-npm run server
-```
-
-サーバー起動時に表示されるネットワーク接続URLをメモしてください：
-```
-ネットワーク接続URL: http://192.168.1.100:3000
-```
-
-#### クライアントPC側
-1. `config.js` の `localNetwork.serverUrl` をサーバーPCのIPアドレスに変更
-2. アプリケーションを起動
-```bash
-npm run client
-```
-
-### 3. インターネット環境（異なるネットワーク）
-
-#### サーバーのデプロイ
-
-**Railwayでのデプロイ例：**
-
-1. Railwayアカウントを作成
-2. Railwayにリポジトリを接続
-3. デプロイ（`npm start`で`server/index.js`が起動するように設定）
-
-4. デプロイされたURLを取得
-
-例: `https://echomirror-production.up.railway.app/`
-
-#### クライアント側の設定
-
-`renderer/renderer.js` の `SERVER_URL` をRailwayのURLに直接書き換えてください：
-```js
-let SERVER_URL = 'https://echomirror-production.up.railway.app';
-```
-
-または、`config.js` の `production.serverUrl` を更新。
+#### クラウド環境（Railway等）
+- サーバーをクラウドにデプロイし、`SERVER_URL`をクラウドのURLに設定
+- ただし、NATやファイアウォールの制限により、WebRTC接続が不安定になる場合がある
 
 ## 設定
 
@@ -130,7 +116,7 @@ let SERVER_URL = 'https://echomirror-production.up.railway.app';
 - サーバーから`initiatorId`が正しくemitされているか、クライアントで受信できているか確認
 - 両方のクライアントで`isInitiator`が正しくセットされているか、DEBUGログで確認
 - Offer/Answer/ICE Candidateの送受信ログが出ているか確認
-- NATや企業ネットワーク環境ではWebRTCがブロックされる場合あり
+- **NATや企業ネットワーク環境ではWebRTCがブロックされる場合があるため、Tailscaleの使用を推奨**
 
 ### 人検出が動作しない場合
 
@@ -165,16 +151,10 @@ let SERVER_URL = 'https://echomirror-production.up.railway.app';
 - [x] Railwayでのサーバーデプロイ・外部公開
 - [x] ヘルスチェック・CORS対応
 
-### フェーズ7: WebRTC安定化・同期トリガー再設計 🚧
-- [ ] Initiator判定・シグナリング開始の安定化
-- [ ] 映像共有の安定動作
-
-## 現状の課題・メモ
-
-- サーバーの外部公開・デプロイ問題は解決
-- **WebRTCのトリガー（Initiator判定・シグナリング開始）が拗れて、映像共有が動作しなくなっている**
-- Initiator判定・WebRTCトリガーのロジックを再設計し、確実に片方がInitiatorとなるようにする必要あり
-- シグナリングの流れ（Offer/Answer/ICE Candidate）が必ず発火するように、サーバー・クライアント両方のイベント設計を見直す必要あり
+### フェーズ7: WebRTC安定化・Tailscale導入 ✅
+- [x] WebRTC接続の安定化
+- [x] Tailscaleによる仮想LAN構築
+- [x] 異なるネットワーク間での安定通信実現
 
 ## プロジェクト構造
 
