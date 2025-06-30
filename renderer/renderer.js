@@ -43,7 +43,7 @@ const rtcConfiguration = {
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
-        // TURNサーバーを追加（NAT越えのため）
+        // 無料で利用可能なTURNサーバー
         {
             urls: 'turn:openrelay.metered.ca:80',
             username: 'openrelayproject',
@@ -58,6 +58,17 @@ const rtcConfiguration = {
             urls: 'turn:openrelay.metered.ca:443?transport=tcp',
             username: 'openrelayproject',
             credential: 'openrelayproject'
+        },
+        // 追加の無料TURNサーバー
+        {
+            urls: 'turn:relay.backups.cz:3478',
+            username: 'webrtc',
+            credential: 'webrtc'
+        },
+        {
+            urls: 'turn:relay.backups.cz:3478?transport=tcp',
+            username: 'webrtc',
+            credential: 'webrtc'
         }
     ]
 };
@@ -392,6 +403,11 @@ function createPeerConnection() {
                 const candidateStr = event.candidate.candidate;
                 if (candidateStr.includes('relay')) {
                     console.log('[DEBUG] TURNサーバー経由のICE候補:', candidateStr);
+                    // TURNサーバーの詳細をログ出力
+                    const relayMatch = candidateStr.match(/relay\s+([^\s]+)/);
+                    if (relayMatch) {
+                        console.log('[DEBUG] 使用中のTURNサーバー:', relayMatch[1]);
+                    }
                 } else if (candidateStr.includes('srflx')) {
                     console.log('[DEBUG] STUNサーバー経由のICE候補:', candidateStr);
                 } else {
