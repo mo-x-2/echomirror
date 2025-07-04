@@ -1,10 +1,46 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const socketIo = require('socket.io');
 const path = require('path');
 
 const app = express();
-const server = http.createServer(app);
+
+// HTTPS設定（開発用の自己署名証明書）
+let server;
+let isHttps = false;
+
+try {
+    // 自己署名証明書の生成（開発用）
+    const { execSync } = require('child_process');
+    const certPath = path.join(__dirname, 'cert');
+    
+    // 証明書ディレクトリが存在しない場合は作成
+    if (!fs.existsSync(certPath)) {
+        fs.mkdirSync(certPath);
+    }
+    
+    // 証明書ファイルが存在しない場合は生成
+    if (!fs.existsSync(path.join(certPath, 'key.pem'))) {
+        console.log('自己署名証明書を生成中...');
+        execSync(`openssl req -x509 -newkey rsa:4096 -keyout ${path.join(certPath, 'key.pem')} -out ${path.join(certPath, 'cert.pem')} -days 365 -nodes -subj "/C=JP/ST=Tokyo/L=Tokyo/O=EchoMirror/CN=localhost"`, { stdio: 'inherit' });
+    }
+    
+    const options = {
+        key: fs.readFileSync(path.join(certPath, 'key.pem')),
+        cert: fs.readFileSync(path.join(certPath, 'cert.pem'))
+    };
+    
+    server = https.createServer(options, app);
+    isHttps = true;
+    console.log('HTTPSサーバーを起動します');
+} catch (error) {
+    console.log('HTTPS証明書の生成に失敗しました。HTTPサーバーを起動します:', error.message);
+    server = http.createServer(app);
+    isHttps = false;
+}
+
 const io = socketIo(server, {
     cors: {
         origin: "*", // 本番環境では適切なドメインを指定
@@ -13,6 +49,9 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 8080;
+
+// 静的ファイルの配信設定
+app.use(express.static(path.join(__dirname, '../renderer')));
 
 // CORS設定
 app.use((req, res, next) => {
@@ -31,16 +70,23 @@ app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
-        clients: io.engine.clientsCount
+        clients: io.engine.clientsCount,
+        https: isHttps
     });
 });
 
-// ルートエンドポイント
+// ルートエンドポイント - HTMLファイルを配信
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../renderer/index.html'));
+});
+
+// APIエンドポイント
+app.get('/api/status', (req, res) => {
     res.json({ 
         message: 'EchoMirror Server is running',
         version: '1.0.0',
-        clients: io.engine.clientsCount
+        clients: io.engine.clientsCount,
+        https: isHttps
     });
 });
 

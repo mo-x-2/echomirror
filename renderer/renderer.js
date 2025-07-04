@@ -34,9 +34,21 @@ let isDetectionActive = false;
 let discoveredServers = [];
 
 // 設定
-// サーバーURLを直接指定
-//let SERVER_URL = 'https://echomirror-production.up.railway.app';
-let SERVER_URL = 'http://100.81.210.75:8080';
+// サーバーURLを動的に設定（HTTPS対応）
+let SERVER_URL;
+if (window.location.protocol === 'https:') {
+    // 現在のページがHTTPSの場合はHTTPSで接続
+    SERVER_URL = 'https://100.81.210.75:8080';
+} else {
+    // HTTPの場合はHTTPで接続（カメラアクセスに制限がある可能性）
+    SERVER_URL = 'http://100.81.210.75:8080';
+}
+
+// 開発環境では現在のホストを使用
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    SERVER_URL = window.location.origin;
+}
+
 const rtcConfiguration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -66,14 +78,30 @@ function setupEventListeners() {
 // ローカルビデオの初期化
 async function initializeLocalVideo() {
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({
+        // カメラアクセス許可の確認
+        console.log('カメラアクセスを要求中...');
+        
+        // より詳細なカメラ設定
+        const constraints = {
             video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user'
+                width: { ideal: 640, min: 320, max: 1280 },
+                height: { ideal: 480, min: 240, max: 720 },
+                facingMode: 'user',
+                frameRate: { ideal: 30, min: 15, max: 60 }
             },
             audio: false
-        });
+        };
+        
+        // 利用可能なデバイスを確認
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log('利用可能なビデオデバイス:', videoDevices);
+        
+        if (videoDevices.length === 0) {
+            throw new Error('利用可能なカメラが見つかりません');
+        }
+        
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
         
         localVideo.srcObject = localStream;
         updateStatus('カメラが初期化されました');
@@ -83,9 +111,77 @@ async function initializeLocalVideo() {
         
     } catch (error) {
         console.error('カメラの初期化に失敗しました:', error);
-        updateStatus('カメラの初期化に失敗しました');
+        
+        // エラーの種類に応じたメッセージ
+        let errorMessage = 'カメラの初期化に失敗しました';
+        
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'カメラアクセスが拒否されました。ブラウザの設定でカメラを許可してください。';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage = 'カメラが見つかりません。カメラが接続されているか確認してください。';
+        } else if (error.name === 'NotReadableError') {
+            errorMessage = 'カメラが他のアプリケーションで使用中です。';
+        } else if (error.name === 'OverconstrainedError') {
+            errorMessage = '要求されたカメラ設定が利用できません。';
+        } else if (error.name === 'SecurityError') {
+            errorMessage = 'セキュリティ上の理由でカメラにアクセスできません。HTTPS接続を確認してください。';
+        }
+        
+        updateStatus(errorMessage);
+        
+        // カメラアクセス許可ボタンを表示
+        showCameraPermissionButton();
     }
 }
+
+// カメラアクセス許可ボタンの表示
+function showCameraPermissionButton() {
+    const permissionDiv = document.createElement('div');
+    permissionDiv.id = 'camera-permission';
+    permissionDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; background: #fed7d7; border-radius: 10px; margin: 10px 0;">
+            <h3>カメラアクセスが必要です</h3>
+            <p>EchoMirrorを使用するには、カメラへのアクセス許可が必要です。</p>
+            <button onclick="requestCameraPermission()" style="padding: 10px 20px; background: #4299e1; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                カメラアクセスを許可
+            </button>
+            <p style="font-size: 0.9em; margin-top: 10px;">
+                <strong>注意:</strong> SafariではHTTPS接続が必要な場合があります。
+            </p>
+        </div>
+    `;
+    
+    // 既存のボタンを無効化
+    connectBtn.disabled = true;
+    detectionToggleBtn.disabled = true;
+    
+    // 許可ボタンを挿入
+    const container = document.querySelector('.container');
+    container.insertBefore(permissionDiv, container.firstChild);
+}
+
+// カメラアクセス許可の再要求
+async function requestCameraPermission() {
+    try {
+        await initializeLocalVideo();
+        
+        // 成功したら許可ボタンを削除
+        const permissionDiv = document.getElementById('camera-permission');
+        if (permissionDiv) {
+            permissionDiv.remove();
+        }
+        
+        // ボタンを有効化
+        connectBtn.disabled = false;
+        
+    } catch (error) {
+        console.error('カメラアクセス許可の再要求に失敗:', error);
+        updateStatus('カメラアクセスの許可に失敗しました。ブラウザの設定を確認してください。');
+    }
+}
+
+// グローバル関数として公開（HTMLから呼び出し可能）
+window.requestCameraPermission = requestCameraPermission;
 
 // 人検出の初期化
 async function initializeFaceDetection() {
@@ -352,8 +448,8 @@ function updateDebugInfo() {
 
 // 2つ目のウィンドウを開く（テスト用）
 function openSecondWindow() {
-    const { shell } = require('electron');
-    shell.openExternal(SERVER_URL);
+    // ブラウザ環境では新しいタブで開く
+    window.open(SERVER_URL, '_blank');
 }
 
 // WebRTC関連の処理

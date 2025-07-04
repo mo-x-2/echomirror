@@ -10,7 +10,11 @@
     "server": "node server/index.js",
     "client": "electron .",
     "dev-server": "nodemon server/index.js",
-    "dev-client": "electron ."
+    "dev-client": "electron .",
+    "web": "node server/index.js",
+    "web-dev": "nodemon server/index.js",
+    "web-https": "HTTPS=true node server/index.js",
+    "web-https-dev": "HTTPS=true nodemon server/index.js"
   },
   "engines": {
     "node": ">=16.0.0"

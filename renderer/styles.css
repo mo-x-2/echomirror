@@ -9,6 +9,15 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #333;
     min-height: 100vh;
+    /* iPad対応: タッチ操作の最適化 */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* 安全領域の対応 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .container {
@@ -286,9 +295,10 @@ body {
 }
 
 /* レスポンシブデザイン */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .video-container {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .header {
@@ -298,7 +308,7 @@ body {
     }
     
     .connection-status {
-        flex-direction: column;
+        justify-content: center;
         gap: 10px;
     }
     
@@ -307,7 +317,89 @@ body {
         align-items: center;
     }
     
-    #debug-content {
-        grid-template-columns: 1fr;
+    .btn {
+        width: 100%;
+        max-width: 300px;
+        padding: 15px 24px;
+        font-size: 1.1rem;
+        /* タッチ操作の最適化 */
+        min-height: 44px;
+    }
+    
+    #local-video, #remote-video {
+        height: 250px;
+    }
+    
+    .remote-video-container {
+        height: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .video-section {
+        padding: 15px;
+    }
+    
+    #local-video, #remote-video {
+        height: 200px;
+    }
+    
+    .remote-video-container {
+        height: 200px;
+    }
+    
+    .debug-info {
+        font-size: 0.9rem;
+    }
+}
+
+/* iPad Pro対応 */
+@media (min-width: 1024px) and (max-width: 1366px) {
+    .video-container {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    #local-video, #remote-video {
+        height: 280px;
+    }
+    
+    .remote-video-container {
+        height: 280px;
+    }
+}
+
+/* 横画面対応 */
+@media (orientation: landscape) and (max-height: 768px) {
+    .video-container {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    
+    #local-video, #remote-video {
+        height: 180px;
+    }
+    
+    .remote-video-container {
+        height: 180px;
+    }
+    
+    .controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .btn {
+        width: auto;
+        min-width: 120px;
     }
 } 
