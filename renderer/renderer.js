@@ -11,6 +11,12 @@ const disconnectBtn = document.getElementById('disconnect-btn');
 const testBtn = document.getElementById('test-btn');
 const detectionToggleBtn = document.getElementById('detection-toggle');
 
+// 新しい画面表示要素
+const blackScreen = document.getElementById('black-screen');
+const fullscreenRemote = document.getElementById('fullscreen-remote');
+const fullscreenRemoteVideo = document.getElementById('fullscreen-remote-video');
+const normalUI = document.getElementById('normal-ui');
+
 // デバッグ要素
 const debugConnection = document.getElementById('debug-connection');
 const debugWebRTC = document.getElementById('debug-webrtc');
@@ -65,6 +71,15 @@ async function initialize() {
     await initializeLocalVideo();
     updateDebugInfo();
     updateStatus(`接続先: ${SERVER_URL}`);
+    
+    // 初期表示状態を設定
+    showBlackScreen();
+    
+    // カメラが正常に初期化された場合、自動でサーバーに接続
+    if (localStream) {
+        console.log('カメラ初期化完了 - 自動でサーバーに接続します');
+        await connectToServer();
+    }
 }
 
 // イベントリスナーの設定
@@ -174,6 +189,12 @@ async function requestCameraPermission() {
         // ボタンを有効化
         connectBtn.disabled = false;
         
+        // カメラアクセス許可後、自動でサーバーに接続
+        if (localStream) {
+            console.log('カメラアクセス許可 - 自動でサーバーに接続します');
+            await connectToServer();
+        }
+        
     } catch (error) {
         console.error('カメラアクセス許可の再要求に失敗:', error);
         updateStatus('カメラアクセスの許可に失敗しました。ブラウザの設定を確認してください。');
@@ -257,12 +278,79 @@ function updateLookingState(isPersonDetected) {
 function updateRemoteVideoVisibility() {
     const shouldShow = localLookingState && peerLookingState && hasRemoteStream && peerConnection && peerConnection.connectionState === 'connected';
     console.log(`[DEBUG] updateRemoteVideoVisibility: shouldShow=${shouldShow}, localLookingState=${localLookingState}, peerLookingState=${peerLookingState}, hasRemoteStream=${hasRemoteStream}, peerConnectionState=${peerConnection ? peerConnection.connectionState : 'none'}`);
+    
+    // 新しい表示制御を適用
+    updateDisplayMode();
+    
     if (shouldShow) {
         showRemoteVideo();
     } else {
         hideRemoteVideo();
     }
 }
+
+// 画面表示モードの制御
+function updateDisplayMode() {
+    // 自分と相手の両方の人検出状態と映像の有無で表示を決定
+    const isLocalDetected = localLookingState;
+    const isPeerDetected = peerLookingState;
+    const hasVideo = hasRemoteStream && peerConnection && peerConnection.connectionState === 'connected';
+    
+    console.log(`[DEBUG] updateDisplayMode: isLocalDetected=${isLocalDetected}, isPeerDetected=${isPeerDetected}, hasVideo=${hasVideo}`);
+    
+    if (isLocalDetected && isPeerDetected && hasVideo) {
+        // 自分と相手の両方で人が検出されており、映像がある場合：全画面で相手の映像を表示
+        showFullscreenRemoteVideo();
+    } else {
+        // 条件を満たしていない場合：黒い画面を表示
+        showBlackScreen();
+    }
+}
+
+// 全画面で相手の映像を表示
+function showFullscreenRemoteVideo() {
+    console.log('[DEBUG] showFullscreenRemoteVideo: 全画面リモート映像表示');
+    
+    // 相手の映像ストリームを全画面用ビデオ要素にも設定
+    if (remoteVideo.srcObject) {
+        fullscreenRemoteVideo.srcObject = remoteVideo.srcObject;
+    }
+    
+    // 表示の切り替え
+    blackScreen.style.display = 'none';
+    fullscreenRemote.classList.remove('hidden');
+    normalUI.style.display = 'none';
+}
+
+// 黒い画面を表示
+function showBlackScreen() {
+    console.log('[DEBUG] showBlackScreen: 黒い画面表示');
+    
+    // 表示の切り替え
+    fullscreenRemote.classList.add('hidden');
+    blackScreen.style.display = 'flex';
+    normalUI.style.display = 'none';
+}
+
+// デバッグモードの切り替え（開発用）
+function toggleDebugMode() {
+    document.body.classList.toggle('debug-mode');
+    const isDebugMode = document.body.classList.contains('debug-mode');
+    console.log(`[DEBUG] デバッグモード: ${isDebugMode ? 'ON' : 'OFF'}`);
+    
+    if (isDebugMode) {
+        normalUI.style.display = 'block';
+    } else {
+        updateDisplayMode();
+    }
+}
+
+// キーボードショートカットでデバッグモードを切り替え（開発用）
+document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.shiftKey && event.key === 'D') {
+        toggleDebugMode();
+    }
+});
 
 // 相手の映像を表示
 function showRemoteVideo() {
@@ -298,6 +386,12 @@ async function connectToServer() {
         updateStatus('サーバーに接続されました');
         updateButtons(true);
         console.log('サーバーに接続されました:', socket.id);
+        
+        // サーバー接続完了後、自動で人検出を開始
+        if (faceDetectionManager && !isDetectionActive) {
+            console.log('サーバー接続完了 - 自動で人検出を開始します');
+            toggleDetection();
+        }
         
         updateDebugInfo();
     });
@@ -369,6 +463,7 @@ function disconnectFromServer() {
     updateStatus('切断されました');
     updateButtons(false);
     hideRemoteVideo();
+    showBlackScreen(); // 切断時は黒い画面を表示
     updateDebugInfo();
 }
 
@@ -409,7 +504,9 @@ function resetWebRTCConnection() {
     connectionAttempts = 0;
     connectedPeers.clear();
     remoteVideo.srcObject = null;
+    fullscreenRemoteVideo.srcObject = null; // 全画面表示用もクリア
     hideRemoteVideo();
+    showBlackScreen(); // リセット時は黒い画面を表示
     updateWebRTCStatus('未接続');
     updateDebugInfo();
 }
@@ -474,6 +571,7 @@ function createPeerConnection() {
     peerConnection.ontrack = (event) => {
         console.log('[DEBUG] ontrack: リモートストリームを受信', event.streams);
         remoteVideo.srcObject = event.streams[0];
+        fullscreenRemoteVideo.srcObject = event.streams[0]; // 全画面表示用にも設定
         hasRemoteStream = true;
         updateRemoteVideoVisibility();
         updateDebugInfo();

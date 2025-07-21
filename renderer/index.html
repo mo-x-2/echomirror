@@ -10,7 +10,20 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <!-- 真っ黒な画面（相手の人検出なしの場合） -->
+    <div id="black-screen" class="black-screen">
+        <div class="black-screen-message">
+            <!-- <p>相手がカメラに映るまでお待ちください</p> -->
+        </div>
+    </div>
+
+    <!-- 相手の映像全画面表示 -->
+    <div id="fullscreen-remote" class="fullscreen-remote hidden">
+        <video id="fullscreen-remote-video" autoplay playsinline></video>
+    </div>
+
+    <!-- 通常のUI（デバッグ・設定用） -->
+    <div class="container" id="normal-ui">
         <header class="header">
             <h1>EchoMirror</h1>
             <div class="connection-status">
@@ -35,7 +48,7 @@
                     <div class="remote-video-container">
                         <video id="remote-video" autoplay playsinline></video>
                         <div id="remote-placeholder" class="remote-placeholder">
-                            <p>相手がカメラに映るまでお待ちください</p>
+                            <!-- <p>相手がカメラに映るまでお待ちください</p> -->
                         </div>
                     </div>
                 </div>

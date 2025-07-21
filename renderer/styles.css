@@ -403,3 +403,85 @@ body {
         min-width: 120px;
     }
 } 
+
+/* ===== 画面表示モード制御 ===== */
+
+/* 真っ黒な画面（相手の人検出なしの場合） */
+.black-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.black-screen-message {
+    text-align: center;
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+/* 相手の映像全画面表示 */
+.fullscreen-remote {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fullscreen-remote video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 通常UIの表示制御 */
+.normal-ui-hidden {
+    display: none !important;
+}
+
+/* 画面モード切り替え用のユーティリティクラス */
+.hidden {
+    display: none !important;
+}
+
+.fade-in {
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* デバッグモード用（開発時のみ表示） */
+body.debug-mode .black-screen,
+body.debug-mode .fullscreen-remote {
+    z-index: -1;
+}
+
+body.debug-mode #normal-ui {
+    display: block !important;
+    z-index: 1002;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .black-screen-message {
+        font-size: 1rem;
+        padding: 20px;
+    }
+} 
